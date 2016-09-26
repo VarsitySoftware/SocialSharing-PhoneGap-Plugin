@@ -17,9 +17,9 @@
 
   <keywords>Social, Share, Twitter, Facebook, Email, SMS, WhatsApp, Tumblr, Pocket, LinkedIn</keywords>
 
-  <repo>https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin.git</repo>
+  <repo>https://github.com/VarsitySoftware/SocialSharing-PhoneGap-Plugin.git</repo>
 
-  <issue>https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin/issues</issue>
+  <issue>https://github.com/VarsitySoftware/SocialSharing-PhoneGap-Plugin/issues</issue>
 
   <engines>
     <engine name="cordova" version=">=3.0.0"/>
@@ -43,7 +43,9 @@
     <source-file src="src/ios/NSString+URLEncoding.m"/>
     <header-file src="src/ios/SocialSharing.h"/>
     <source-file src="src/ios/SocialSharing.m"/>
-
+    <header-file src="src/ios/UIImage+animatedGIF.h"/>
+    <source-file src="src/ios/UIImage+animatedGIF.m"/>
+          
     <framework src="Social.framework" weak="true" />
     <framework src="MessageUI.framework" weak="true" />
   </platform>
