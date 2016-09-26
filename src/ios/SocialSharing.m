@@ -1,12 +1,13 @@
 #import "SocialSharing.h"
 #import "NSString+URLEncoding.h"
+#import "UIImage+animatedGIF.h"
 #import <Cordova/CDV.h>
 #import <Social/Social.h>
 #import <Foundation/NSException.h>
 #import <MessageUI/MFMessageComposeViewController.h>
 #import <MessageUI/MFMailComposeViewController.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-
+#import <AssetsLibrary/ALAssetsLibrary.h>
 static NSString *const kShareOptionMessage = @"message";
 static NSString *const kShareOptionSubject = @"subject";
 static NSString *const kShareOptionFiles = @"files";
