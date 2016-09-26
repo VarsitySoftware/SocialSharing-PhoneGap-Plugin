@@ -649,7 +649,20 @@ static NSString *const kShareOptionUrl = @"url";
       UIImage* image = [self getImage:filename];
       if (image != nil) {
         shared = true;
-        UIImageWriteToSavedPhotosAlbum(image, self, @selector(thisImage:wasSavedToPhotoAlbumWithError:contextInfo:), nil);
+        
+        NSArray *componentsArray = [filename componentsSeparatedByString:@"."];
+        NSString *fileExtension = [componentsArray lastObject];
+        
+        if ([fileExtension isEqualToString: @"gif"]) {
+          NSURL *url = [NSURL URLWithString:filename];
+          ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];		
+		      NSData *data = [NSData dataWithContentsOfURL:url];
+		      [library writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, NSError *error) {}];
+        }
+        else
+        {
+          UIImageWriteToSavedPhotosAlbum(image, self, @selector(thisImage:wasSavedToPhotoAlbumWithError:contextInfo:), nil);
+        }
       }
     }
     if (!shared) {
@@ -674,7 +687,15 @@ static NSString *const kShareOptionUrl = @"url";
 -(UIImage*)getImage: (NSString *)imageName {
   UIImage *image = nil;
   if (imageName != (id)[NSNull null]) {
-    if ([imageName hasPrefix:@"http"]) {
+    
+    NSArray *componentsArray = [imageName componentsSeparatedByString:@"."];
+    NSString *fileExtension = [componentsArray lastObject];
+    
+    if ([fileExtension isEqualToString: @"gif"]) {		  
+		  NSURL *url = [NSURL URLWithString:imageName];
+		  image = [UIImage animatedImageWithAnimatedGIFURL:(NSURL *)url];		
+	  }
+    else if ([imageName hasPrefix:@"http"]) {
       image = [UIImage imageWithData:[NSData dataWithContentsOfURL:[NSURL URLWithString:imageName]]];
     } else if ([imageName hasPrefix:@"www/"]) {
       image = [UIImage imageNamed:imageName];
