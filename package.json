@@ -10,10 +10,7 @@
       "wp8"
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/VarsitySoftware/SocialSharing-PhoneGap-Plugin.git"
-  },
+  "repo": "https://github.com/VarsitySoftware/SocialSharing-PhoneGap-Plugin.git",  
   "keywords": [
     "Social",
     "Share",
