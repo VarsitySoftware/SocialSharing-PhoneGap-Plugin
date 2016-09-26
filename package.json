@@ -1,9 +1,9 @@
 {
-  "name": "cordova-plugin-x-socialsharing",
+  "name": "com.varsitysoftware.plugins.socialsharing",
   "version": "5.1.3",
   "description": "Share text, images (and other files), or a link via the native sharing widget of your device. Android is fully supported, as well as iOS 6 and up. WP8 has somewhat limited support.",
   "cordova": {
-    "id": "cordova-plugin-x-socialsharing",
+    "id": "com.varsitysoftware.plugins.socialsharing",
     "platforms": [
       "ios",
       "android",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EddyVerbruggen/SocialSharing-PhoneGap-Plugin.git"
+    "url": "git+https://github.com/VarsitySoftware/SocialSharing-PhoneGap-Plugin.git"
   },
   "keywords": [
     "Social",
