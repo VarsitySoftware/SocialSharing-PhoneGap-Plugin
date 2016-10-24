@@ -8,6 +8,9 @@
 #import <MessageUI/MFMailComposeViewController.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AssetsLibrary/ALAssetsLibrary.h>
+#import <Accounts/Accounts.h>
+#import <Photos/Photos.h>
+
 static NSString *const kShareOptionMessage = @"message";
 static NSString *const kShareOptionSubject = @"subject";
 static NSString *const kShareOptionFiles = @"files";
@@ -145,7 +148,24 @@ static NSString *const kShareOptionUrl = @"url";
 #pragma GCC diagnostic warning "-Wdeprecated-declarations"
       }
 
-    NSArray * socialSharingExcludeActivities = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"SocialSharingExcludeActivities"];
+    //NSArray * socialSharingExcludeActivities = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"SocialSharingExcludeActivities"];
+
+	NSArray *socialSharingExcludeActivities = @[UIActivityTypeAirDrop,
+                                   UIActivityTypePrint,
+								   UIActivityTypeCopyToPasteboard,
+								   UIActivityTypeMail,
+								   UIActivityTypeMessage,
+								   UIActivityTypeOpenInIBooks,
+								   UIActivityTypePostToTencentWeibo,
+								   UIActivityTypePostToTwitter,								   
+                                   UIActivityTypeAssignToContact,
+                                   UIActivityTypeSaveToCameraRoll,
+                                   UIActivityTypeAddToReadingList,
+                                   UIActivityTypePostToFlickr,
+                                   UIActivityTypePostToVimeo,
+								   @"com.apple.reminders.RemindersEditorExtension",@"com.apple.mobilenotes.SharingExtension"
+								   ];
+
     if (socialSharingExcludeActivities!=nil && [socialSharingExcludeActivities count] > 0) {
       activityVC.excludedActivityTypes = socialSharingExcludeActivities;
     }
@@ -646,25 +666,110 @@ static NSString *const kShareOptionUrl = @"url";
   [self.commandDelegate runInBackground:^{
     bool shared = false;
     for (NSString* filename in filenames) {
-      UIImage* image = [self getImage:filename];
-      if (image != nil) {
-        shared = true;
-        
-        NSArray *componentsArray = [filename componentsSeparatedByString:@"."];
+		
+		NSArray *componentsArray = [filename componentsSeparatedByString:@"."];
         NSString *fileExtension = [componentsArray lastObject];
+
+        NSURL *url = [NSURL URLWithString:filename];
+
+		if ([fileExtension isEqualToString: @"mov"] || [fileExtension isEqualToString: @"mp4"]) 
+		{
+			shared = true; 
+
+			//ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];		
+			//NSData *data = [NSData dataWithContentsOfURL:url];
+			//[library writeVideoAtPathToSavedPhotosAlbum:url completionBlock:^(NSURL *assetURL, NSError *error) {}];
+
+			NSURLSessionTask *download = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+            if(error) {
+                NSLog(@"error saving: %@", error.localizedDescription);
+                return;
+            }
+
+            NSURL *documentsURL = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+            NSURL *tempURL = [documentsURL URLByAppendingPathComponent:[url lastPathComponent]];
+
+            [[NSFileManager defaultManager] moveItemAtURL:location toURL:tempURL error:nil];
+
+            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                PHAssetChangeRequest *changeRequest = [PHAssetChangeRequest creationRequestForAssetFromVideoAtFileURL:tempURL];
+
+                NSLog(@"%@", changeRequest.description);
+				} completionHandler:^(BOOL success, NSError *error) {
+					if (success) {
+						NSLog(@"saved down");
+						[[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+
+						CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+						[self.commandDelegate sendPluginResult:pluginResult callbackId:self.command.callbackId];	
+
+					} else {
+						NSLog(@"something wrong %@", error.localizedDescription);
+						[[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+
+						CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
+						[self.commandDelegate sendPluginResult:pluginResult callbackId:self.command.callbackId];
+					}
+				}];
+			}];
+			[download resume];
+		}
+		else
+		{
+			UIImage* image = [self getImage:filename];
+			if (image != nil) 
+			{
+				shared = true;        
         
-        if ([fileExtension isEqualToString: @"gif"]) {
-          NSURL *url = [NSURL URLWithString:filename];
-          ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];		
-		      NSData *data = [NSData dataWithContentsOfURL:url];
-		      [library writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, NSError *error) {}];
-        }
-        else
-        {
-          UIImageWriteToSavedPhotosAlbum(image, self, @selector(thisImage:wasSavedToPhotoAlbumWithError:contextInfo:), nil);
-        }
-      }
+				if ([fileExtension isEqualToString: @"gif"]) {
+					
+					//ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];		
+					//NSData *data = [NSData dataWithContentsOfURL:url];
+					//[library writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, NSError *error) {}];
+
+					NSURLSessionTask *download = [[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+					if(error) {
+						NSLog(@"error saving: %@", error.localizedDescription);
+						return;
+					}
+
+					NSURL *documentsURL = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+					NSURL *tempURL = [documentsURL URLByAppendingPathComponent:[url lastPathComponent]];
+
+					[[NSFileManager defaultManager] moveItemAtURL:location toURL:tempURL error:nil];
+
+					[[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+						PHAssetChangeRequest *changeRequest = [PHAssetChangeRequest creationRequestForAssetFromImageAtFileURL:tempURL];
+
+						NSLog(@"%@", changeRequest.description);
+						} completionHandler:^(BOOL success, NSError *error) {
+							if (success) {
+								NSLog(@"saved down");
+								[[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+
+								CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+								[self.commandDelegate sendPluginResult:pluginResult callbackId:self.command.callbackId];	
+
+							} else {
+								NSLog(@"something wrong %@", error.localizedDescription);
+								[[NSFileManager defaultManager] removeItemAtURL:tempURL error:nil];
+
+								CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
+								[self.commandDelegate sendPluginResult:pluginResult callbackId:self.command.callbackId];
+							}
+						}];
+					}];
+					[download resume];
+
+				}
+				else
+				{
+					UIImageWriteToSavedPhotosAlbum(image, self, @selector(thisImage:wasSavedToPhotoAlbumWithError:contextInfo:), nil);
+				}
+			}		
+		}
     }
+
     if (!shared) {
       CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"no valid image was passed"];
       [self.commandDelegate sendPluginResult:pluginResult callbackId:self.command.callbackId];
@@ -718,6 +823,86 @@ static NSString *const kShareOptionUrl = @"url";
   }
   return image;
 }
+
+-(void)uploadImageToTwitter {
+        
+		// http://xcodenoobies.blogspot.my/2016/01/how-to-using-slrequest-to-upload-image.html
+        ACAccountStore *account = [[ACAccountStore alloc] init];
+        ACAccountType *accountType = [account accountTypeWithAccountTypeIdentifier:
+                                      ACAccountTypeIdentifierTwitter];
+        
+        [account requestAccessToAccountsWithType:accountType options:nil
+                                      completion:^(BOOL granted, NSError *error)
+        {
+            if (granted == YES)
+            {
+                NSArray *arrayOfAccounts = [account
+                                            accountsWithAccountType:accountType];
+                
+                if ([arrayOfAccounts count] > 0)
+                {
+                    ACAccount *twitterAccount =
+                    [arrayOfAccounts lastObject];
+                    
+                    
+                    //NSURL *furl = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+                    //NSURL *fileURL = [furl URLByAppendingPathComponent:@"http://i.giphy.com/l0MYsHqH9Ah8GT5Is.gif"];
+					NSURL *url = [NSURL URLWithString:@"http://i.giphy.com/l0MYsHqH9Ah8GT5Is.gif"];
+                    NSData *imageData = [NSData dataWithContentsOfURL:url];
+                   
+                    NSURL *requestURL = [NSURL URLWithString:@"https://upload.twitter.com/1.1/media/upload.json"];
+                    
+                    SLRequest *postRequest = [SLRequest 
+                                              requestForServiceType:SLServiceTypeTwitter
+                                              requestMethod:SLRequestMethodPOST
+                                              URL:requestURL parameters:nil];
+                    
+                    postRequest.account = twitterAccount;
+                    
+                    [postRequest addMultipartData:imageData
+                                         withName:@"media"
+                                             type:@"image/gif"
+                                         filename:@"test.gif"];
+                    
+                    [postRequest
+                     performRequestWithHandler:^(NSData *responseData,
+                                                 NSHTTPURLResponse *urlResponse, NSError *error)
+                     {
+                         
+                         
+                          NSDictionary *json = [NSJSONSerialization JSONObjectWithData:responseData options:0 error:nil];
+                         
+                         NSString *mediaID = [json objectForKey:@"media_id_string"];
+                         
+                         
+                         if (mediaID!=nil) {
+                             
+                         
+                             NSURL *requestURL2 = [NSURL URLWithString:@"https://api.twitter.com/1.1/statuses/update.json"];
+                         NSDictionary *message2 = @{@"status": @"Here is the image",
+                                                    @"media_ids": mediaID };
+                         
+                         SLRequest *postRequest2 = [SLRequest
+                                                   requestForServiceType:SLServiceTypeTwitter
+                                                   requestMethod:SLRequestMethodPOST
+                                                   URL:requestURL2 parameters:message2];
+                         postRequest2.account = twitterAccount;
+                         
+                         [postRequest2
+                          performRequestWithHandler:^(NSData *responseData,
+                                                      NSHTTPURLResponse *urlResponse, NSError *error)
+                          {
+                             // DONE!!!
+
+                          }];
+                             
+                         }
+                         
+                     }];
+                }
+            }
+         }];
+	}
 
 -(NSURL*)getFile: (NSString *)fileName {
   NSURL *file = nil;
